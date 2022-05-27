@@ -8,6 +8,6 @@ public class NavcoinSDK : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "HTTP", "Json", "UMG", "SlateCore", "Slate", "WebBrowserWidget" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay", "HTTP", "Json","UMG", "SlateCore","Slate", "WebBrowserWidget" });
 	}
 }

@@ -22,27 +22,23 @@ void ANavcoinSDKGameMode::StartPlay()
 	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
 	PlayerController->SetInputMode(InputModeData);
 	PlayerController->bShowMouseCursor = false;
-
-	FString file = FPaths::ProjectConfigDir();
+	FString ConfigFile = FPaths::ProjectConfigDir();
 	FString Code;
-	file.Append(TEXT("config.txt"));
+	ConfigFile.Append(TEXT("config.txt"));
 	IPlatformFile& FileManager = FPlatformFileManager::Get().GetPlatformFile();
-	if (FileManager.FileExists(*file))
+	if (FileManager.FileExists(*ConfigFile))
 	{
-		if (FFileHelper::LoadFileToString(Code, *file, FFileHelper::EHashOptions::None))
+		if (FFileHelper::LoadFileToString(Code, *ConfigFile, FFileHelper::EHashOptions::None))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Code -> %s"), *Code);
 			GEngine->AddOnScreenDebugMessage(-1, 20.0f, FColor::Yellow, TEXT("Checking NFTs..."));
 			UE_LOG(LogTemp, Display, TEXT("Checking NFTs with Code -> %s"), *Code);
 			FHttpRequestRef Request = FHttpModule::Get().CreateRequest();
-
 			TSharedRef<FJsonObject> RequestObj = MakeShared<FJsonObject>();
 			RequestObj->SetStringField("code", * Code);
-
 			FString RequestBody;
 			TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
 			FJsonSerializer::Serialize(RequestObj, Writer);
-
 			Request->OnProcessRequestComplete().BindUObject(this, &ANavcoinSDKGameMode::OnResponseReceived);
 			Request->SetURL(ApiURL);
 			Request->SetVerb("POST");
@@ -55,35 +51,32 @@ void ANavcoinSDKGameMode::StartPlay()
 			UE_LOG(LogTemp, Warning, TEXT("Did not load code from file"));
 		}
 	}
-
 	GameItems.Empty();
 	NFTs.Empty();
-
 }
 
 static bool IsNFTAvailable(FString NftFamilyID)
 {
-	bool isNFTExist = false;
+	bool bNFTExist = false;
 	for (int32 index = 0; index < NFTs.Num(); index++)
 	{
 		TSharedPtr<FJsonObject> NFT = NFTs[index]->AsObject();
 		if (*NFT->GetStringField("family_id") == NftFamilyID)
 		{
 			UE_LOG(LogTemp, Display, TEXT("Is nft available -> %s"), *NFT->GetStringField("family_id"));
-			isNFTExist = true;
+			bNFTExist = true;
 			return true;
 			break;
 		}
 	}
-	if (!isNFTExist) UE_LOG(LogTemp, Display, TEXT("NFT not found -> %s"), *NftFamilyID);
+	if (!bNFTExist) UE_LOG(LogTemp, Display, TEXT("NFT not found -> %s"), *NftFamilyID);
 
 	return false;
 }
 static bool IsItemInInventory(FString ItemType, int32 ItemID)
 {
 	FString NftFamilyID;
-	bool isItemFound = false;
-	bool isNftFound = false;
+	bool bItemFound = false;
 
 	for (int32 index = 0; index < GameItems.Num(); index++)
 	{
@@ -93,22 +86,23 @@ static bool IsItemInInventory(FString ItemType, int32 ItemID)
 		{
 			NftFamilyID = *item->GetStringField("NftFamilyID");
 			UE_LOG(LogTemp, Display, TEXT("Game item exist. NFT Family ID -> %s"), *NftFamilyID);
-			isItemFound = true;
+			bItemFound = true;
 			break;
 		}
 	}
-	if (isItemFound)
+	if (bItemFound)
 	{
+		bool bNftFound = false;
 		for (int32 index = 0; index < NFTs.Num(); index++)
 		{
 			TSharedPtr<FJsonObject> NFT = NFTs[index]->AsObject();
 			if (*NFT->GetStringField("family_id") == NftFamilyID)
 			{
 				UE_LOG(LogTemp, Display, TEXT("NFT exist -> %s"), *NFT->GetStringField("family_id"));
-				isNftFound = true;
+				bNftFound = true;
 			}
 		}
-		return isNftFound;
+		return bNftFound;
 	}
 	else
 	{
@@ -117,7 +111,7 @@ static bool IsItemInInventory(FString ItemType, int32 ItemID)
 	}
 }
 
-// Adds in game items to collection to
+// Add in-game items to collection
 void AddItem(FString ItemType, int ItemID, FString ItemName, FString NFTFamilyID)
 {
 	TSharedPtr< FJsonObject > JsonObj = MakeShareable(new FJsonObject);
@@ -132,22 +126,18 @@ void AddItem(FString ItemType, int ItemID, FString ItemName, FString NFTFamilyID
 void ANavcoinSDKGameMode::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bConnectedSuccessfully)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 20.0f, FColor::Yellow, TEXT("API response received..."));
-
 	// Reading NFTs from API
 	TSharedPtr<FJsonObject> ResponseObj;
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 	FJsonSerializer::Deserialize(Reader, ResponseObj);
-
 	GEngine->AddOnScreenDebugMessage(-1, 20.0f, FColor::Yellow, TEXT("NFTs received..."));
 	UE_LOG(LogTemp, Display, TEXT("Response %s"), *Response->GetContentAsString());
 	UE_LOG(LogTemp, Display, TEXT("Title: %s"), *ResponseObj->GetStringField("message"));
 	NFTs = ResponseObj->GetArrayField("nfts");
-
 	// Declaring in game items
 	AddItem("PlayerSkin", 0, "Skin 1", "skin_1");
 	AddItem("PlayerSkin", 1, "Skin 2", "skin_2");
 	AddItem("PlayerSkin", 2, "Skin 3", "skin_3");
-
 	// Printing NFTs to screen
 	for (int32 index = 0; index < NFTs.Num(); index++)
 	{
@@ -158,8 +148,7 @@ void ANavcoinSDKGameMode::OnResponseReceived(FHttpRequestPtr Request, FHttpRespo
 		GEngine->AddOnScreenDebugMessage(-1, 20.0f, FColor::Green, *nft->GetStringField("family_id"));
 		GEngine->AddOnScreenDebugMessage(-1, 20.0f, FColor::Green, *nft->GetStringField("name"));
 	}
-
-	// Logging Game Items to console
+	// Logging Game Items to Console
 	for (int32 index = 0; index < GameItems.Num(); index++)
 	{
 		TSharedPtr<FJsonObject> nft = GameItems[index]->AsObject();
@@ -169,7 +158,6 @@ void ANavcoinSDKGameMode::OnResponseReceived(FHttpRequestPtr Request, FHttpRespo
 	bool bIsItemInInventory = IsItemInInventory("PlayerSkin", 0);
 	UE_LOG(LogTemp, Display, TEXT("Is NFT in inventory -> %s"), bIsItemInInventory ? TEXT("True") : TEXT("False"));
 	GEngine->AddOnScreenDebugMessage(-1, 20.0f, FColor::Yellow, bIsItemInInventory ? TEXT("True") : TEXT("False"));
-
 	bool bIsNFTAvailable = IsNFTAvailable("skin_1");
 	UE_LOG(LogTemp, Display, TEXT("Is NFT available -> %s"), bIsNFTAvailable ? TEXT("True") : TEXT("False"));
 	GEngine->AddOnScreenDebugMessage(-1, 20.0f, FColor::Yellow, bIsNFTAvailable ? TEXT("True") : TEXT("False"));
