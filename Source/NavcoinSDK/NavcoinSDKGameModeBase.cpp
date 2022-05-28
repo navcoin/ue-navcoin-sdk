@@ -27,7 +27,7 @@ void ANavcoinSDKGameModeBase::BeginPlay()
 	else
 	{
 		FString CharacterSet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-		uint32 AmountOfCharacters=24;
+		uint32 AmountOfCharacters=8;
 		Code.AppendInt(FDateTime::Now().ToUnixTimestamp());
 		Code.Append("-");
 		for (uint32 i = 0; i < AmountOfCharacters; ++i)
