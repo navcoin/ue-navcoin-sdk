@@ -6,7 +6,7 @@
 #include "UObject/ConstructorHelpers.h"
 static TArray< TSharedPtr<FJsonValue> > GameItems;
 static TArray< TSharedPtr<FJsonValue> > NFTs;
-FString ApiURL = "https://api.nextwallet.org/CheckQR";
+FString ApiURL = "https://api.nextwallet.org/testnet/CheckQR";
 ANavcoinSDKGameMode::ANavcoinSDKGameMode()
 	: Super()
 {
